@@ -13,6 +13,13 @@ import com.zosh.service.CartItemService;
 import com.zosh.service.CartService;
 import com.zosh.service.ProductService;
 import com.zosh.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -22,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/cart")
 @RequiredArgsConstructor
+@Tag(name = "Cart", description = "Shopping cart management APIs for adding, updating, and managing cart items")
 public class CartController {
 	
 	private final CartService cartService;
@@ -31,8 +39,18 @@ public class CartController {
 
 
 	
+	@Operation(summary = "Get user cart", description = "Retrieve the current user's shopping cart with all items")
+	@ApiResponses(value = {
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Cart retrieved successfully",
+			content = @Content(mediaType = "application/json", schema = @Schema(implementation = Cart.class))),
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized - Authentication required"),
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Cart not found"),
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal server error")
+	})
+	@SecurityRequirement(name = "Bearer Authentication")
 	@GetMapping
-	public ResponseEntity<Cart> findUserCartHandler(@RequestHeader("Authorization") String jwt) throws UserException{
+	public ResponseEntity<Cart> findUserCartHandler(
+			@Parameter(description = "JWT Authorization token", required = true) @RequestHeader("Authorization") String jwt) throws UserException{
 		
 		User user=userService.findUserProfileByJwt(jwt);
 		
@@ -43,9 +61,20 @@ public class CartController {
 		return new ResponseEntity<Cart>(cart,HttpStatus.OK);
 	}
 	
+	@Operation(summary = "Add item to cart", description = "Add a product item to the user's shopping cart with specified size and quantity")
+	@ApiResponses(value = {
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "202", description = "Item added to cart successfully",
+			content = @Content(mediaType = "application/json", schema = @Schema(implementation = CartItem.class))),
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request data"),
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized - Authentication required"),
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Product not found"),
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal server error")
+	})
+	@SecurityRequirement(name = "Bearer Authentication")
 	@PutMapping("/add")
-	public ResponseEntity<CartItem> addItemToCart(@RequestBody AddItemRequest req,
-												  @RequestHeader("Authorization") String jwt) throws UserException, ProductException{
+	public ResponseEntity<CartItem> addItemToCart(
+			@Parameter(description = "Request containing product ID, size, and quantity", required = true) @RequestBody AddItemRequest req,
+			@Parameter(description = "JWT Authorization token", required = true) @RequestHeader("Authorization") String jwt) throws UserException, ProductException{
 		
 		User user=userService.findUserProfileByJwt(jwt);
 		Product product=productService.findProductById(req.getProductId());
@@ -60,10 +89,19 @@ public class CartController {
 		
 	}
 
+	@Operation(summary = "Delete cart item", description = "Remove a specific item from the user's shopping cart")
+	@ApiResponses(value = {
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "202", description = "Item removed from cart successfully",
+			content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized - Authentication required"),
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Cart item not found"),
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal server error")
+	})
+	@SecurityRequirement(name = "Bearer Authentication")
 	@DeleteMapping("/item/{cartItemId}")
 	public ResponseEntity<ApiResponse>deleteCartItemHandler(
-			@PathVariable Long cartItemId,
-			@RequestHeader("Authorization")String jwt)
+			@Parameter(description = "Cart item ID to remove", required = true) @PathVariable Long cartItemId,
+			@Parameter(description = "JWT Authorization token", required = true) @RequestHeader("Authorization")String jwt)
 			throws CartItemException, UserException{
 
 		User user=userService.findUserProfileByJwt(jwt);
@@ -74,11 +112,21 @@ public class CartController {
 		return new ResponseEntity<ApiResponse>(res,HttpStatus.ACCEPTED);
 	}
 
+	@Operation(summary = "Update cart item", description = "Update the quantity or other details of a specific cart item")
+	@ApiResponses(value = {
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "202", description = "Cart item updated successfully",
+			content = @Content(mediaType = "application/json", schema = @Schema(implementation = CartItem.class))),
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid cart item data"),
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized - Authentication required"),
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Cart item not found"),
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal server error")
+	})
+	@SecurityRequirement(name = "Bearer Authentication")
 	@PutMapping("/item/{cartItemId}")
 	public ResponseEntity<CartItem>updateCartItemHandler(
-			@PathVariable Long cartItemId,
-			@RequestBody CartItem cartItem,
-			@RequestHeader("Authorization")String jwt)
+			@Parameter(description = "Cart item ID to update", required = true) @PathVariable Long cartItemId,
+			@Parameter(description = "Updated cart item data", required = true) @RequestBody CartItem cartItem,
+			@Parameter(description = "JWT Authorization token", required = true) @RequestHeader("Authorization")String jwt)
 			throws CartItemException, UserException{
 
 		User user=userService.findUserProfileByJwt(jwt);

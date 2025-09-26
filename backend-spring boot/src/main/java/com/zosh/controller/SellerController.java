@@ -13,6 +13,13 @@ import com.zosh.response.AuthResponse;
 import com.zosh.service.*;
 import com.zosh.service.impl.CustomeUserServiceImplementation;
 import com.zosh.utils.OtpUtils;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +31,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collection;
@@ -32,6 +40,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/sellers")
 @RequiredArgsConstructor
+@Tag(name = "Sellers", description = "Seller management APIs for seller authentication, registration, and profile management")
 public class SellerController {
 
     private final SellerService sellerService;
@@ -43,8 +52,17 @@ public class SellerController {
     private final CustomeUserServiceImplementation customeUserServiceImplementation;
 
 
+    @Operation(summary = "Send login OTP", description = "Send OTP to seller's email for login authentication")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "OTP sent successfully",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid email address"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Seller not found"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal server error or email service failure")
+    })
     @PostMapping("/sent/login-top")
-    public ResponseEntity<ApiResponse> sentLoginOtp(@RequestBody VerificationCode req) throws MessagingException, SellerException {
+    public ResponseEntity<ApiResponse> sentLoginOtp(
+            @Parameter(description = "Verification code request with seller email", required = true) @RequestBody VerificationCode req) throws MessagingException, SellerException {
         Seller seller = sellerService.getSellerByEmail(req.getEmail());
 
         String otp = OtpUtils.generateOTP();
@@ -59,8 +77,17 @@ public class SellerController {
         return new ResponseEntity<>(res, HttpStatus.CREATED);
     }
 
+    @Operation(summary = "Verify login OTP", description = "Verify seller's login OTP and return authentication token")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Login successful",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = AuthResponse.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid OTP or email"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Authentication failed"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @PostMapping("/verify/login-top")
-    public ResponseEntity<AuthResponse> verifyLoginOtp(@RequestBody VerificationCode req) throws MessagingException, SellerException {
+    public ResponseEntity<AuthResponse> verifyLoginOtp(
+            @Parameter(description = "Verification code with OTP and email", required = true) @RequestBody VerificationCode req) throws MessagingException, SellerException {
 //        Seller savedSeller = sellerService.createSeller(seller);
 
 
@@ -104,8 +131,17 @@ public class SellerController {
         return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
     }
 
+    @Operation(summary = "Verify seller email", description = "Verify seller's email address using OTP")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Email verified successfully",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = Seller.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid OTP"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Seller not found"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @PatchMapping("/verify/{otp}")
-    public ResponseEntity<Seller> verifySellerEmail(@PathVariable String otp) throws SellerException {
+    public ResponseEntity<Seller> verifySellerEmail(
+            @Parameter(description = "OTP for email verification", required = true) @PathVariable String otp) throws SellerException {
 
 
         VerificationCode verificationCode = verificationCodeRepository.findByOtp(otp);
@@ -120,8 +156,17 @@ public class SellerController {
     }
 
 
+    @Operation(summary = "Create seller account", description = "Register a new seller account and send email verification")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Seller created successfully",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = Seller.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid seller data"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Seller already exists"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal server error or email service failure")
+    })
     @PostMapping
-    public ResponseEntity<Seller> createSeller(@RequestBody Seller seller) throws SellerException, MessagingException {
+    public ResponseEntity<Seller> createSeller(
+            @Parameter(description = "Seller registration data", required = true) @RequestBody Seller seller) throws SellerException, MessagingException {
         Seller savedSeller = sellerService.createSeller(seller);
 
         String otp = OtpUtils.generateOTP();
@@ -134,39 +179,84 @@ public class SellerController {
         return new ResponseEntity<>(savedSeller, HttpStatus.CREATED);
     }
 
+    @Operation(summary = "Get seller by ID", description = "Retrieve seller information by ID")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Seller retrieved successfully",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = Seller.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Seller not found"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<Seller> getSellerById(@PathVariable Long id) throws SellerException {
+    public ResponseEntity<Seller> getSellerById(
+            @Parameter(description = "Seller ID", required = true) @PathVariable Long id) throws SellerException {
         Seller seller = sellerService.getSellerById(id);
         return new ResponseEntity<>(seller, HttpStatus.OK);
     }
 
+    @Operation(summary = "Get seller profile", description = "Get current seller's profile information")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Seller profile retrieved successfully",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = Seller.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized - Invalid JWT token"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Seller not found"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = "Bearer Authentication")
+    @PreAuthorize("hasRole('SELLER') or hasRole('ADMIN')")
     @GetMapping("/profile")
     public ResponseEntity<Seller> getSellerByJwt(
-            @RequestHeader("Authorization") String jwt) throws SellerException {
+            @Parameter(description = "JWT Authorization token", required = true) @RequestHeader("Authorization") String jwt) throws SellerException {
         String email = jwtProvider.getEmailFromJwtToken(jwt);
         Seller seller = sellerService.getSellerByEmail(email);
         return new ResponseEntity<>(seller, HttpStatus.OK);
     }
 
+    @Operation(summary = "Get seller report", description = "Get current seller's sales and performance report")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Seller report retrieved successfully",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = SellerReport.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized - Invalid JWT token"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Seller or report not found"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = "Bearer Authentication")
+    @PreAuthorize("hasRole('SELLER') or hasRole('ADMIN')")
     @GetMapping("/report")
     public ResponseEntity<SellerReport> getSellerReport(
-            @RequestHeader("Authorization") String jwt) throws SellerException {
+            @Parameter(description = "JWT Authorization token", required = true) @RequestHeader("Authorization") String jwt) throws SellerException {
         String email = jwtProvider.getEmailFromJwtToken(jwt);
         Seller seller = sellerService.getSellerByEmail(email);
         SellerReport report = sellerReportService.getSellerReport(seller);
         return new ResponseEntity<>(report, HttpStatus.OK);
     }
 
+    @Operation(summary = "Get all sellers", description = "Retrieve all sellers with optional status filter")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Sellers retrieved successfully",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = List.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @GetMapping
     public ResponseEntity<List<Seller>> getAllSellers(
-            @RequestParam(required = false) AccountStatus status) {
+            @Parameter(description = "Filter by account status (PENDING, ACTIVE, SUSPENDED, DEACTIVATED)", required = false) @RequestParam(required = false) AccountStatus status) {
         List<Seller> sellers = sellerService.getAllSellers(status);
         return ResponseEntity.ok(sellers);
     }
 
+    @Operation(summary = "Update seller profile", description = "Update current seller's profile information")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Seller updated successfully",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = Seller.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid seller data"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized - Invalid JWT token"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Seller not found"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = "Bearer Authentication")
     @PatchMapping()
     public ResponseEntity<Seller> updateSeller(
-            @RequestHeader("Authorization") String jwt, @RequestBody Seller seller) throws SellerException {
+            @Parameter(description = "JWT Authorization token", required = true) @RequestHeader("Authorization") String jwt, 
+            @Parameter(description = "Updated seller data", required = true) @RequestBody Seller seller) throws SellerException {
 
         Seller profile = sellerService.getSellerProfile(jwt);
         Seller updatedSeller = sellerService.updateSeller(profile.getId(), seller);
@@ -174,8 +264,17 @@ public class SellerController {
 
     }
 
+    @Operation(summary = "Delete seller", description = "Delete a seller account by ID (Admin only)")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "204", description = "Seller deleted successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized - Admin access required"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Seller not found"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = "Bearer Authentication")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSeller(@PathVariable Long id) throws SellerException {
+    public ResponseEntity<Void> deleteSeller(
+            @Parameter(description = "Seller ID to delete", required = true) @PathVariable Long id) throws SellerException {
 
         sellerService.deleteSeller(id);
         return ResponseEntity.noContent().build();
