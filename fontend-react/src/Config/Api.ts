@@ -27,8 +27,11 @@ export const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('jwt');
-    if (token) {
+    if (token && token !== 'null' && token !== 'undefined' && token.length > 0) {
       config.headers.Authorization = `Bearer ${token}`;
+    } else if (config.headers.Authorization) {
+      // Remove Authorization header if token is invalid
+      delete config.headers.Authorization;
     }
     return config;
   },

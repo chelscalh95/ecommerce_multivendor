@@ -44,6 +44,12 @@ public class JwtTokenValidator extends OncePerRequestFilter {
 		if (jwt != null && jwt.startsWith("Bearer ")) {
 			jwt = jwt.substring(7);
 			
+			// Check if token is empty or invalid after removing "Bearer "
+			if (jwt.trim().isEmpty() || "null".equals(jwt) || "undefined".equals(jwt)) {
+				filterChain.doFilter(request, response);
+				return;
+			}
+			
 			try {
 				SecretKey key = Keys.hmacShaKeyFor(JwtConstant.SECRET_KEY.getBytes());
 				

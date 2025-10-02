@@ -41,7 +41,7 @@ public class AppConfig {
                         .requestMatchers("/api/products/category/{categoryId}").permitAll()
                         .requestMatchers("/api/products/public/**").permitAll()
                         .requestMatchers("/api/home/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/api-docs/**", "/swagger-resources/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         
                         // Admin endpoints
@@ -97,7 +97,8 @@ public class AppConfig {
             cfg.setAllowedOrigins(Arrays.asList(
                 "https://zosh-bazzar-zosh.vercel.app",
                 "http://localhost:3000",
-                "http://localhost:3001"
+                "http://localhost:3001",
+                "http://localhost:5454"
             ));
             cfg.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
             cfg.setAllowCredentials(true);
