@@ -27,7 +27,10 @@ import Mobile from './data/Products/mobile';
 
 function App() {
   const dispatch = useAppDispatch()
-  const { auth, sellerAuth, sellers, user } = useAppSelector(store => store)
+  const auth = useAppSelector(store => store.auth)
+  const sellerAuth = useAppSelector(store => store.sellerAuth)
+  const sellers = useAppSelector(store => store.sellers)
+  const user = useAppSelector(store => store.user)
 const navigate=useNavigate();
 
   useEffect(() => {

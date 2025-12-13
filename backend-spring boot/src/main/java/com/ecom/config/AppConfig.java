@@ -35,12 +35,15 @@ public class AppConfig {
                 .authorizeHttpRequests(Authorize -> Authorize
                         // Public endpoints
                         .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/test/**").permitAll()
                         .requestMatchers("/api/products/search").permitAll()
                         .requestMatchers("/api/products/{id}").permitAll()
                         .requestMatchers("/api/products/{id}/reviews").permitAll()
                         .requestMatchers("/api/products/category/{categoryId}").permitAll()
                         .requestMatchers("/api/products/public/**").permitAll()
                         .requestMatchers("/api/home/**").permitAll()
+                        .requestMatchers("/home/**").permitAll()
+                        .requestMatchers("/home-page").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/api-docs/**", "/swagger-resources/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         
@@ -95,7 +98,6 @@ public class AppConfig {
         return request -> {
             CorsConfiguration cfg = new CorsConfiguration();
             cfg.setAllowedOrigins(Arrays.asList(
-                "https://zosh-bazzar-zosh.vercel.app",
                 "http://localhost:3000",
                 "http://localhost:3001",
                 "http://localhost:5454"

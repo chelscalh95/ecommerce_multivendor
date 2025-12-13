@@ -15,7 +15,7 @@ import DealSlider from './Deals/Deals'
 
 const Home = () => {
     const [showChatBot, setShowChatBot] = useState(false)
-    const { homePage } = useAppSelector(store => store)
+    const homePage = useAppSelector(store => store.homePage)
     const navigate = useNavigate();
 
     const handleShowChatBot = () => {

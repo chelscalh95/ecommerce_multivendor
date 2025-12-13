@@ -24,7 +24,8 @@ import SearchProducts from '../customer/pages/Search/SearchProducts'
 
 const CustomerRoutes = () => {
   const dispatch = useAppDispatch()
-    const { cart, auth } = useAppSelector(store => store);
+    const cart = useAppSelector(store => store.cart)
+    const auth = useAppSelector(store => store.auth)
 
     useEffect(() => {
         dispatch(fetchUserCart(localStorage.getItem("jwt") || ""))
