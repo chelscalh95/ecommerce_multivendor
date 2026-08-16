@@ -31,12 +31,14 @@ const CartItemCard : React.FC<CartItemProps> = ({ item }) => {
                     <img className='w-[90px] rounded-md' 
                     src={item.product.images[0]}
                     // src="https://www.taneira.com/dw/image/v2/BKMH_PRD/on/demandware.static/-/Sites-Taneira-product-catalog/default/dw422bdf2e/images/Taneira/Catalog/BFW22CW0042_1.jpg?sw=1000&sh=1500"
-                     alt="" />
+                     alt={item.product.title} />
                 </div>
                 <div className='space-y-2'>
-                    <h1 className='font-semibold text-lg'>{item.product?.seller?.businessDetails.businessName}</h1>
-                    <p className='text-gray-600 font-medium text-sm'>Turquoise Blue Stonework Satin Designer Saree</p>
-                    <p className='text-gray-400 text-xs'><strong>Sold by:</strong> Natural Lifestyle Products Private Limited</p>
+                    <h1 className='font-semibold text-lg'>{item.product.title}</h1>
+                    <p className='text-gray-400 text-xs'>
+                        <strong>Sold by:</strong>{" "}
+                        {item.product.seller?.businessDetails?.businessName || "Unknown seller"}
+                    </p>
                     <p className='text-xs'><strong>7 days replacement</strong> available</p>
                     <p className='text-sm text-gray-500'><strong>quantity : </strong> {item.quantity}</p>
                 </div>
@@ -47,7 +49,7 @@ const CartItemCard : React.FC<CartItemProps> = ({ item }) => {
 
                 <div className=' flex items-center gap-2  w-[140px] justify-between'>
 
-                    <Button size='small' disabled={item.quantity == 1} onClick={() => handleUpdateQuantity(-1)} >
+                    <Button size='small' disabled={item.quantity === 1} onClick={() => handleUpdateQuantity(-1)} >
                         <RemoveIcon />
                     </Button>
                     <span className='px-3  font-semibold'>
