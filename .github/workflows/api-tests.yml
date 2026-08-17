@@ -61,7 +61,14 @@ jobs:
           docker compose ps
           docker compose logs --no-color backend mysql mailpit
           exit 1
-
+          
+      - name: Load deterministic catalog data
+        run: |
+          docker compose exec -T \
+            -e MYSQL_PWD=ecommerce_pass \
+            mysql \
+            mysql -uecommerce_user ecommerce_multi_vendor \
+            < qa-automation/test-data/catalog.sql
       - name: Show service status
         run: docker compose ps
 

@@ -12,7 +12,6 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./backend-spring boot/src/main/resources/sample_data.sql:/docker-entrypoint-initdb.d/sample_data.sql
     networks:
       - ecommerce-network
     healthcheck:
