@@ -36,11 +36,7 @@ public class AppConfig {
                         // Public endpoints
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/test/**").permitAll()
-                        .requestMatchers("/api/products/search").permitAll()
-                        .requestMatchers("/api/products/{id}").permitAll()
-                        .requestMatchers("/api/products/{id}/reviews").permitAll()
-                        .requestMatchers("/api/products/category/{categoryId}").permitAll()
-                        .requestMatchers("/api/products/public/**").permitAll()
+                        .requestMatchers("/products", "/products/**").permitAll()
                         .requestMatchers("/api/home/**").permitAll()
                         .requestMatchers("/home/**").permitAll()
                         .requestMatchers("/home-page").permitAll()
