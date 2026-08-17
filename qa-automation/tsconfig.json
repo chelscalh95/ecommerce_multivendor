@@ -13,7 +13,8 @@
   },
   "include": [
     "config/**/*.ts",
+    "fixtures/**/*.ts",
     "tests/**/*.ts",
     "playwright.config.ts"
-  ]
+  ]  
 }
