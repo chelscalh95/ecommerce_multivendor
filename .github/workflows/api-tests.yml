@@ -1,0 +1,91 @@
+name: API Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: api-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api-tests:
+    name: Playwright API Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    env:
+      API_BASE_URL: http://localhost:5454
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: qa-automation/package-lock.json
+
+      - name: Install test dependencies
+        working-directory: qa-automation
+        run: npm ci
+
+      - name: Start API test environment
+        run: docker compose up -d --build mysql mailpit backend
+
+      - name: Wait for backend readiness
+        shell: bash
+        run: |
+          for attempt in {1..60}; do
+            if curl --fail --silent \
+              http://localhost:5454/v3/api-docs > /dev/null; then
+              echo "Backend is ready."
+              exit 0
+            fi
+
+            echo "Waiting for backend: attempt ${attempt}/60"
+            sleep 5
+          done
+
+          echo "Backend did not become ready."
+          docker compose ps
+          docker compose logs --no-color backend mysql mailpit
+          exit 1
+
+      - name: Show service status
+        run: docker compose ps
+
+      - name: Validate TypeScript
+        working-directory: qa-automation
+        run: npm run typecheck
+
+      - name: Run API tests
+        working-directory: qa-automation
+        run: npm run test:api
+
+      - name: Capture Docker logs after failure
+        if: failure()
+        run: docker compose logs --no-color backend mysql mailpit
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-api-report
+          path: qa-automation/playwright-report/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Stop test environment
+        if: always()
+        run: docker compose down --volumes
